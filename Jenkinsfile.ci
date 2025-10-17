@@ -1,0 +1,88 @@
+// Jenkinsfile.ci
+pipeline {
+    agent any
+
+    environment {
+        PYTHON = '/usr/bin/python3'
+        MODEL_PATH = 'models/new_model/model.pkl'
+        REPORT = 'report.md'
+        METRICS_JSON = 'evaluation_results.json'
+    }
+
+    triggers {
+        // Check repo for model updates every 5 minutes (or use GitHub webhook)
+        pollSCM('H/5 * * * *')
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh """
+                pip install --upgrade pip
+                pip install -r requirements.txt
+                """
+            }
+        }
+
+        stage('Step 1 - Load Metadata') {
+            steps {
+                sh "${PYTHON} scripts/load_metadata.py models/new_model/metadata.json"
+            }
+        }
+
+        stage('Step 2 - Run Evaluation') {
+            steps {
+                sh "${PYTHON} scripts/run_evaluation.py ${MODEL_PATH}"
+            }
+        }
+
+        stage('Step 3 - Generate Report') {
+            steps {
+                sh "${PYTHON} scripts/generate_report.py"
+            }
+        }
+
+        stage('Archive Evaluation Results') {
+            steps {
+                archiveArtifacts artifacts: "${REPORT}, ${METRICS_JSON}", fingerprint: true
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                script {
+                    def metrics = readJSON file: METRICS_JSON
+                    if (metrics.accuracy < 0.9) {
+                        error("Accuracy below 0.9, failing CI pipeline.")
+                    } else {
+                        echo "Accuracy acceptable, triggering CD pipeline..."
+                    }
+                }
+            }
+        }
+
+        stage('Trigger CD Pipeline') {
+            steps {
+                build job: 'mlops-cd',
+                      parameters: [
+                        string(name: 'MODEL_NAME', value: 'new_model'),
+                        string(name: 'ACCURACY', value: '0.9')
+                      ],
+                      wait: false
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "CI pipeline completed successfully and triggered CD job."
+        }
+        failure {
+            echo "CI failed; CD will not be triggered."
+        }
+    }
+}

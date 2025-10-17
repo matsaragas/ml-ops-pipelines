@@ -1,0 +1,60 @@
+// Jenkinsfile.cd
+pipeline {
+    agent any
+
+    parameters {
+        string(name: 'MODEL_NAME', defaultValue: 'new_model', description: 'Model name to deploy')
+        string(name: 'ACCURACY', defaultValue: 'unknown', description: 'Accuracy from CI pipeline')
+    }
+
+    environment {
+        IMAGE = "mlops-demo/${params.MODEL_NAME}:staging"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps { checkout scm }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${IMAGE} ."
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                sh """
+                docker stop ml_model_staging || true
+                docker rm ml_model_staging || true
+                docker run -d --name ml_model_staging -p 8080:8080 ${IMAGE}
+                """
+            }
+        }
+
+        stage('Run Smoke Tests') {
+            steps {
+                sh "pip install requests"
+                sh "python3 scripts/smoke_tests.py"
+            }
+        }
+
+        stage('Manual Approval for Production') {
+            steps {
+                input message: "Deploy model ${params.MODEL_NAME} (acc: ${params.ACCURACY}) to PRODUCTION?", ok: 'Deploy'
+            }
+        }
+
+        stage('Deploy to Production') {
+            steps {
+                sh "docker tag ${IMAGE} mlops-demo/${params.MODEL_NAME}:prod"
+                sh "docker push mlops-demo/${params.MODEL_NAME}:prod"
+            }
+        }
+    }
+
+    post {
+        success { echo "✅ Model deployed successfully to production." }
+        failure { echo "❌ Deployment failed." }
+    }
+}

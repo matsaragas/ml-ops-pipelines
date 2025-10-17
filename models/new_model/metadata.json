@@ -1,0 +1,8 @@
+{
+  "name": "sentiment_v2",
+  "version": "2.0.1",
+  "framework": "scikit-learn",
+  "created_by": "data_team",
+  "trained_on": "2025-10-01",
+  "description": "Toy sentiment model for demo"
+}
