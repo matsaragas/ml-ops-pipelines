@@ -10,7 +10,7 @@ def score_risk(metrics: dict) -> float:
         return 0.15
     if acc >= 0.8:
         return 0.35
-    
+
     return 0.7
 
 
