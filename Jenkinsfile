@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PYTHON = '/usr/bin/local/python3'
+        PYTHON = '/usr/local/bin/python3'
         MODEL_PATH = 'models/new_model/model.pkl'
         IMAGE = 'mlops-demo/model:staging'
     }
