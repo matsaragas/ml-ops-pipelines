@@ -3,15 +3,15 @@ from pathlib import Path
 
 
 def score_risk(metrics: dict) -> float:
-# Simple rule-based risk scoring (0 low risk, 1 high risk)
-acc = metrics.get('accuracy', 0)
-if acc >= 0.95:
-    return 0.05
-if acc >= 0.9:
-    return 0.15
-if acc >= 0.8:
-    return 0.35
-return 0.7
+    acc = metrics.get('accuracy', 0)
+    if acc >= 0.95:
+        return 0.05
+    if acc >= 0.9:
+        return 0.15
+    if acc >= 0.8:
+        return 0.35
+    
+    return 0.7
 
 
 metrics = json.loads(Path('evaluation_results.json').read_text())
