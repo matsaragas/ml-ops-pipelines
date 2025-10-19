@@ -18,7 +18,7 @@ class Item(BaseModel):
 # load model at startup
 try:
     with open(MODEL_PATH, 'rb') as f:
-    model = pickle.load(f)
+        model = pickle.load(f)
 except Exception:
     model = None
 
