@@ -8,9 +8,13 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                checkout scm
+                //Clone Repository
+                script {
+                   echo 'Cloning Github Repository'
+                   checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'mlops-git-token', url: 'https://github.com/matsaragas/ml-ops-pipelines.git']])
+                }
             }
         }
 
